@@ -2,6 +2,16 @@
 #include "predator_crypto_3des.h"
 #include "../predator_i.h"
 #include <string.h>
+#include <furi_hal_nfc.h>
+
+// STUB: Firmware doesn't have ISO14443B - safe placeholder
+static bool furi_hal_nfc_iso14443b_transceive(
+    const uint8_t* tx_data, size_t tx_len,
+    uint8_t* rx_data, size_t* rx_len) {
+    UNUSED(tx_data); UNUSED(tx_len); UNUSED(rx_data);
+    *rx_len = 0;
+    return false;
+}
 
 // PRODUCTION CALYPSO IMPLEMENTATION
 // Real European transit card protocol (Paris Navigo, Brussels MOBIB, etc.)
@@ -295,7 +305,7 @@ bool calypso_close_secure_session(PredatorApp* app, CalypsoAuthContext* auth_ctx
     FURI_LOG_I("Calypso", "Closing secure session");
     
     // Build Close Session command with MAC
-    uint8_t cmd[8];
+    uint8_t cmd[9];  // FIX: 5 header + 4 MAC = 9 bytes
     cmd[0] = 0x94;
     cmd[1] = CALYPSO_CMD_CLOSE_SESSION;
     cmd[2] = 0x00;

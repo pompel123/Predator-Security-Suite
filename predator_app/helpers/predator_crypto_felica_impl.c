@@ -2,6 +2,16 @@
 #include "predator_crypto_3des.h"
 #include "../predator_i.h"
 #include <string.h>
+#include <furi_hal_nfc.h>
+
+// STUB: Firmware doesn't have FeliCa - safe placeholder
+static bool furi_hal_nfc_felica_transceive(
+    const uint8_t* tx_data, size_t tx_len,
+    uint8_t* rx_data, size_t* rx_len) {
+    UNUSED(tx_data); UNUSED(tx_len); UNUSED(rx_data);
+    *rx_len = 0;
+    return false;
+}
 
 // PRODUCTION FELICA IMPLEMENTATION
 // Real Sony FeliCa (NFC-F) protocol for Japan/Asia-Pacific transit cards
