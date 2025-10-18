@@ -222,6 +222,15 @@ typedef struct PredatorApp {
     uint8_t selected_barrier_region;        // 0-7: Region selection (Worldwide, EU, NA, Asia, etc.)
     uint8_t selected_barrier_type;          // 1-6: Public, Private, Hospital, Mall, Airport, Government
     uint8_t selected_barrier_manufacturer;  // 0-34: Manufacturer, 0xFF: Try all
+    
+    // PROFESSIONAL: Captured crypto parameters from passive opener
+    // These enable OPTION 1: Use captured serial for dictionary attacks
+    bool has_captured_serial;       // True if we captured a Keeloq serial number
+    uint32_t captured_serial;       // Keeloq serial number from passive capture (24-bit)
+    bool has_captured_uid;          // True if we captured a Hitag2 UID
+    uint64_t captured_uid;          // Hitag2 UID from passive capture (48-bit)
+    uint32_t captured_counter;      // Last captured rolling code counter
+    uint32_t captured_frequency;    // Frequency the signal was captured on
 } PredatorApp;
 
 
