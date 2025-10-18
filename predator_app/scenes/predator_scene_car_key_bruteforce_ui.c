@@ -498,6 +498,39 @@ void predator_scene_car_key_bruteforce_ui_on_enter(void* context) {
     memset(&carkey_state, 0, sizeof(CarKeyBruteforceState));
     carkey_state.status = CarKeyBruteforceStatusIdle;
     
+    // BUGFIX: Check scene state first - menu can force specific attack type
+    // Scene state: 0 = auto-detect, 1 = force rolling code, 2 = force smart key
+    uint32_t forced_mode = scene_manager_get_scene_state(app->scene_manager, PredatorSceneCarKeyBruteforceUI);
+    
+    if(forced_mode == 1) {
+        // FORCED: Rolling Code Attack (from menu)
+        carkey_state.is_smart_key_attack = false;
+        carkey_state.use_crypto_engine = true;
+    } else if(forced_mode == 2) {
+        // FORCED: Smart Key Attack (from menu)
+        carkey_state.is_smart_key_attack = true;
+        carkey_state.use_crypto_engine = false;
+    } else {
+        // AUTO-DETECT: Based on car model's protocol
+        CryptoProtocol protocol = predator_models_get_protocol(app->selected_model_index);
+        switch(protocol) {
+            case CryptoProtocolAES128:
+            case CryptoProtocolTesla:
+                carkey_state.is_smart_key_attack = true;
+                carkey_state.use_crypto_engine = false;
+                break;
+            case CryptoProtocolKeeloq:
+            case CryptoProtocolHitag2:
+                carkey_state.is_smart_key_attack = false;
+                carkey_state.use_crypto_engine = true;
+                break;
+            default:
+                carkey_state.is_smart_key_attack = false;
+                carkey_state.use_crypto_engine = false;
+                break;
+        }
+    }
+    
     if(!app->view_dispatcher) {
         FURI_LOG_E("CarKeyBruteforceUI", "View dispatcher is NULL");
         return;

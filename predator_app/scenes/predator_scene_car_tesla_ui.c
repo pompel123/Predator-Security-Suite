@@ -282,14 +282,17 @@ bool predator_scene_car_tesla_ui_on_event(void* context, SceneManagerEvent event
         switch(event.event) {
             case 1: // Charge Port - navigate to key bruteforce (configured for Tesla)
                 predator_log_append(app, "Tesla: Charge Port Exploit");
+                scene_manager_set_scene_state(app->scene_manager, PredatorSceneCarKeyBruteforceUI, 2); // Force smart key (Tesla uses AES)
                 scene_manager_next_scene(app->scene_manager, PredatorSceneCarKeyBruteforceUI);
                 return true;
             case 2: // Key Fob - navigate to key bruteforce
                 predator_log_append(app, "Tesla: Key Fob Clone Attack");
+                scene_manager_set_scene_state(app->scene_manager, PredatorSceneCarKeyBruteforceUI, 2); // Force smart key
                 scene_manager_next_scene(app->scene_manager, PredatorSceneCarKeyBruteforceUI);
                 return true;
             case 3: // Mobile App - navigate to key bruteforce  
                 predator_log_append(app, "Tesla: Mobile App Bypass");
+                scene_manager_set_scene_state(app->scene_manager, PredatorSceneCarKeyBruteforceUI, 2); // Force smart key
                 scene_manager_next_scene(app->scene_manager, PredatorSceneCarKeyBruteforceUI);
                 return true;
             case 4: // Sentry - navigate to jamming
@@ -302,6 +305,7 @@ bool predator_scene_car_tesla_ui_on_event(void* context, SceneManagerEvent event
                 return true;
             case 6: // Battery - navigate to key bruteforce
                 predator_log_append(app, "Tesla: Battery System Hack");
+                scene_manager_set_scene_state(app->scene_manager, PredatorSceneCarKeyBruteforceUI, 2); // Force smart key
                 scene_manager_next_scene(app->scene_manager, PredatorSceneCarKeyBruteforceUI);
                 return true;
             case 7: // Walking Open - navigate to passive opener

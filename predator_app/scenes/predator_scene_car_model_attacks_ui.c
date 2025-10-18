@@ -56,15 +56,18 @@ bool predator_scene_car_model_attacks_ui_on_event(void* context, SceneManagerEve
             case 1: // Protocol Test - NEW: Test crypto algorithms
                 scene_manager_next_scene(app->scene_manager, PredatorSceneProtocolTestUI);
                 return true;
-            case 2: // Key Bruteforce - Navigate to existing scene
+            case 2: // Key Bruteforce - Auto-detect protocol
+                scene_manager_set_scene_state(app->scene_manager, PredatorSceneCarKeyBruteforceUI, 0); // 0 = auto-detect
                 scene_manager_next_scene(app->scene_manager, PredatorSceneCarKeyBruteforceUI);
                 return true;
-            case 3: // Rolling Code Attack - Advanced bruteforce with rolling code detection
+            case 3: // Rolling Code Attack - Force Keeloq/Hitag2
                 predator_log_append(app, "Rolling Code: Advanced cryptographic attack");
+                scene_manager_set_scene_state(app->scene_manager, PredatorSceneCarKeyBruteforceUI, 1); // 1 = force rolling
                 scene_manager_next_scene(app->scene_manager, PredatorSceneCarKeyBruteforceUI);
                 return true;
-            case 4: // Smart Key Attack - AES-128 challenge-response for modern cars
+            case 4: // Smart Key Attack - Force AES-128
                 predator_log_append(app, "Smart Key: AES-128 challenge-response attack");
+                scene_manager_set_scene_state(app->scene_manager, PredatorSceneCarKeyBruteforceUI, 2); // 2 = force smart key
                 scene_manager_next_scene(app->scene_manager, PredatorSceneCarKeyBruteforceUI);
                 return true;
             case 5: // RF Jamming - Navigate to existing scene
