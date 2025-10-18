@@ -108,7 +108,7 @@ static bool calypso_reader_input_callback(InputEvent* event, void* context) {
         }
         
         if(event->key == InputKeyOk && reader_state->card_detected) {
-            scene_manager_next_scene(app->scene_manager, PredatorSceneCalypsoActions);
+            scene_manager_next_scene(app->scene_manager, PredatorSceneCalypsoActionsUI);
             return true;
         }
     }
@@ -146,7 +146,7 @@ static void calypso_reader_timer_callback(void* context) {
     // ViewDispatcher handles redraws automatically
 }
 
-void predator_scene_calypso_reader_on_enter(void* context) {
+void predator_scene_calypso_reader_ui_on_enter(void* context) {
     PredatorApp* app = context;
     if(!app || !app->view_dispatcher) return;
     
@@ -177,13 +177,13 @@ void predator_scene_calypso_reader_on_enter(void* context) {
     if(app->timer) furi_timer_start(app->timer, 500);
 }
 
-bool predator_scene_calypso_reader_on_event(void* context, SceneManagerEvent event) {
+bool predator_scene_calypso_reader_ui_on_event(void* context, SceneManagerEvent event) {
     UNUSED(context);
     UNUSED(event);
     return false;
 }
 
-void predator_scene_calypso_reader_on_exit(void* context) {
+void predator_scene_calypso_reader_ui_on_exit(void* context) {
     PredatorApp* app = context;
     
     if(app && app->timer) {

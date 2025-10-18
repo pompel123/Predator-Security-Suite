@@ -17,7 +17,8 @@ App(
         "predator.c",
         "predator_uart.c",
 
-        # Essential helpers only
+        # Helpers (Core business logic & crypto)
+        "helpers/predator_calypso_listener.c",  # REAL NFC listener for TL bus
         "helpers/predator_boards.c",
         "helpers/predator_error.c",
         "helpers/predator_esp32.c",
@@ -74,6 +75,8 @@ App(
         "scenes/predator_scene_felica_dump_ui.c",
         "scenes/predator_scene_calypso_reader_ui.c",
         "scenes/predator_scene_calypso_actions_ui.c",
+        "scenes/predator_scene_calypso_buy_ticket_ui.c",
+        "scenes/predator_scene_calypso_emulate_ui.c",
         "scenes/predator_scene_calypso_journey_ui.c",
         "scenes/predator_scene_calypso_contracts_ui.c",
         
