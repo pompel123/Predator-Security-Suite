@@ -59,7 +59,8 @@ bool predator_scene_car_attacks_ui_on_event(void* context, SceneManagerEvent eve
         case 2: // Tesla Charge Port
             scene_manager_next_scene(app->scene_manager, PredatorSceneCarTeslaUI);
             return true;
-        case 3: // Key Bruteforce
+        case 3: // Key Bruteforce - Auto-detect
+            scene_manager_set_scene_state(app->scene_manager, PredatorSceneCarKeyBruteforceUI, 0); // 0 = auto-detect
             scene_manager_next_scene(app->scene_manager, PredatorSceneCarKeyBruteforceUI);
             return true;
         case 4: // Car Jamming
