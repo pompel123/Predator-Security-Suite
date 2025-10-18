@@ -13,8 +13,8 @@ static TicketState state = TicketStateSelect;
 static uint8_t city_idx = 0;  // 0=Lausanne, 1=Paris, 2=Brussels
 static uint32_t tick = 0;
 
-static const char* cities[] = {"TL Lausanne", "Navigo Paris", "MOBIB Brussels"};
-static const char* prices[] = {"100 CHF", "75 EUR", "49 EUR"};
+static const char* cities[] = {"TL Lausanne", "VMCV Montreux", "Navigo Paris", "MOBIB Brussels"};
+static const char* prices[] = {"100 CHF", "80 CHF", "75 EUR", "49 EUR"};
 
 static void draw_cb(Canvas* c, void* ctx) {
     UNUSED(ctx);
@@ -24,7 +24,7 @@ static void draw_cb(Canvas* c, void* ctx) {
     if(state == TicketStateSelect) {
         canvas_draw_str(c, 2, 10, "Buy Ticket");
         canvas_set_font(c, FontSecondary);
-        for(int i = 0; i < 3; i++) {
+        for(int i = 0; i < 4; i++) {
             char buf[24];  // Reduced from 32
             snprintf(buf, 24, "%s%s - %s", i==city_idx?"> ":"  ", cities[i], prices[i]);
             canvas_draw_str(c, 2, 25+i*10, buf);
@@ -61,7 +61,7 @@ static bool input_cb(InputEvent* e, void* ctx) {
     }
     if(state == TicketStateSelect) {
         if(e->key == InputKeyUp && city_idx > 0) city_idx--;
-        if(e->key == InputKeyDown && city_idx < 2) city_idx++;
+        if(e->key == InputKeyDown && city_idx < 3) city_idx++;
         if(e->key == InputKeyOk) { state = TicketStateBuy; tick = 0; }
         return true;
     }
