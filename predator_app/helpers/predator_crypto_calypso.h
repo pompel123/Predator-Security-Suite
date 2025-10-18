@@ -3,11 +3,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "../predator_i.h"
+
+// Forward declaration for NFC poller
+typedef struct Iso14443_4bPoller Iso14443_4bPoller;
 
 /**
- * Calypso Contactless Card Standard
+ * @file predator_crypto_calypso.h
+ * @brief Calypso Transit Card Protocol Implementation
  * 
- * International standard for public transport ticketing.
+ * CALYPSO SECURE PROTOCOL - European Transit Standard
  * Interoperable system used in 100+ cities across 30+ countries.
  * 
  * GEOGRAPHIC COVERAGE:
@@ -255,12 +260,15 @@ typedef struct {
 
 // ========== Detection & Selection ==========
 
-/**
- * Detect Calypso card
- * @param app PredatorApp context
- * @param card Output card structure
- * @return true if Calypso card detected
- */
+// Initialize Calypso with NFC poller (call from NFC worker context)
+void calypso_poller_set(Iso14443_4bPoller* poller);
+
+// Clean up poller
+void calypso_poller_clear(void);
+
+// ========== CARD OPERATIONS ==========
+
+// Card detection and identification (requires poller to be set)
 bool calypso_detect_card(struct PredatorApp* app, CalypsoCard* card);
 
 /**
