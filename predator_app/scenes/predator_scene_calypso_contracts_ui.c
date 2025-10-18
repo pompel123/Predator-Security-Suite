@@ -113,7 +113,7 @@ static bool contracts_input_callback(InputEvent* event, void* context) {
     return false;
 }
 
-void predator_scene_calypso_contracts_on_enter(void* context) {
+void predator_scene_calypso_contracts_ui_on_enter(void* context) {
     PredatorApp* app = context;
     if(!app || !app->view_dispatcher) return;
     
@@ -141,13 +141,13 @@ void predator_scene_calypso_contracts_on_enter(void* context) {
     view_dispatcher_switch_to_view(app->view_dispatcher, PredatorViewCalypsoContracts);
 }
 
-bool predator_scene_calypso_contracts_on_event(void* context, SceneManagerEvent event) {
+bool predator_scene_calypso_contracts_ui_on_event(void* context, SceneManagerEvent event) {
     UNUSED(context);
     UNUSED(event);
     return false;
 }
 
-void predator_scene_calypso_contracts_on_exit(void* context) {
+void predator_scene_calypso_contracts_ui_on_exit(void* context) {
     UNUSED(context);
     
     if(state) {

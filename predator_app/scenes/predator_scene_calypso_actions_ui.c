@@ -16,7 +16,7 @@ void predator_scene_calypso_actions_submenu_callback(void* context, uint32_t ind
     view_dispatcher_send_custom_event(app->view_dispatcher, index);
 }
 
-void predator_scene_calypso_actions_on_enter(void* context) {
+void predator_scene_calypso_actions_ui_on_enter(void* context) {
     PredatorApp* app = context;
     Submenu* submenu = app->submenu;
 
@@ -61,18 +61,18 @@ void predator_scene_calypso_actions_on_enter(void* context) {
     view_dispatcher_switch_to_view(app->view_dispatcher, PredatorViewSubmenu);
 }
 
-bool predator_scene_calypso_actions_on_event(void* context, SceneManagerEvent event) {
+bool predator_scene_calypso_actions_ui_on_event(void* context, SceneManagerEvent event) {
     PredatorApp* app = context;
     bool consumed = false;
 
     if(event.type == SceneManagerEventTypeCustom) {
         switch(event.event) {
         case CalypsoActionsViewJourney:
-            scene_manager_next_scene(app->scene_manager, PredatorSceneCalypsoJourney);
+            scene_manager_next_scene(app->scene_manager, PredatorSceneCalypsoJourneyUI);
             consumed = true;
             break;
         case CalypsoActionsViewContracts:
-            scene_manager_next_scene(app->scene_manager, PredatorSceneCalypsoContracts);
+            scene_manager_next_scene(app->scene_manager, PredatorSceneCalypsoContractsUI);
             consumed = true;
             break;
         case CalypsoActionsDumpCard:
@@ -95,7 +95,7 @@ bool predator_scene_calypso_actions_on_event(void* context, SceneManagerEvent ev
     return consumed;
 }
 
-void predator_scene_calypso_actions_on_exit(void* context) {
+void predator_scene_calypso_actions_ui_on_exit(void* context) {
     PredatorApp* app = context;
     submenu_reset(app->submenu);
 }
