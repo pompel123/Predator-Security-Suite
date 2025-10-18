@@ -3,18 +3,72 @@
 #include "../predator_i.h"
 #include <string.h>
 #include <furi_hal_nfc.h>
+#include <lib/nfc/protocols/iso14443_4b/iso14443_4b_poller.h>
+#include <lib/nfc/protocols/iso14443_3b/iso14443_3b_poller.h>
 
-// STUB: Firmware doesn't have ISO14443B - safe placeholder
-static bool furi_hal_nfc_iso14443b_transceive(
-    const uint8_t* tx_data, size_t tx_len,
-    uint8_t* rx_data, size_t* rx_len) {
-    UNUSED(tx_data); UNUSED(tx_len); UNUSED(rx_data);
-    *rx_len = 0;
-    return false;
+// REAL Flipper NFC integration - Memory optimized (heap-based BitBuffers)
+// NO large stack buffers - using 3KB stack limit safely
+
+static Iso14443_4bPoller* calypso_poller = NULL;
+
+// Helper: Send command using REAL Flipper ISO14443-4B API
+static bool calypso_send_apdu(
+    const uint8_t* cmd, size_t cmd_len,
+    uint8_t* response, size_t* response_len) {
+    
+    if(!calypso_poller || !cmd || !response || !response_len) {
+        return false;
+    }
+    
+    // Use heap-allocated BitBuffers (memory safe!)
+    BitBuffer* tx_buf = bit_buffer_alloc(cmd_len * 8);
+    BitBuffer* rx_buf = bit_buffer_alloc(256 * 8);  // Max APDU response
+    
+    if(!tx_buf || !rx_buf) {
+        if(tx_buf) bit_buffer_free(tx_buf);
+        if(rx_buf) bit_buffer_free(rx_buf);
+        return false;
+    }
+    
+    // Copy command to BitBuffer
+    bit_buffer_copy_bytes(tx_buf, cmd, cmd_len);
+    
+    // REAL Flipper API call!
+    Iso14443_4bError error = iso14443_4b_poller_send_block(
+        calypso_poller, 
+        tx_buf, 
+        rx_buf
+    );
+    
+    bool success = false;
+    if(error == Iso14443_4bErrorNone) {
+        *response_len = bit_buffer_get_size_bytes(rx_buf);
+        if(*response_len <= 256) {  // Safety check
+            bit_buffer_write_bytes(rx_buf, response, *response_len);
+            success = true;
+        }
+    }
+    
+    // Free heap memory
+    bit_buffer_free(tx_buf);
+    bit_buffer_free(rx_buf);
+    
+    return success;
 }
 
 // PRODUCTION CALYPSO IMPLEMENTATION
-// Real European transit card protocol (Paris Navigo, Brussels MOBIB, etc.)
+// Real European transit card protocol (Paris Navigo, Brussels MOBIB, TL Lausanne, etc.)
+
+// Initialize Calypso poller (call from NFC worker context)
+void calypso_poller_set(Iso14443_4bPoller* poller) {
+    calypso_poller = poller;
+    FURI_LOG_I("Calypso", "NFC poller initialized for Calypso (Europe)");
+}
+
+// Clean up poller
+void calypso_poller_clear(void) {
+    calypso_poller = NULL;
+}
 
 // Calypso command codes (REAL PROTOCOL - ISO 14443 Type B based)
 #define CALYPSO_CMD_SELECT_APPLICATION  0x02
@@ -272,8 +326,11 @@ bool calypso_open_secure_session(PredatorApp* app, const CalypsoCard* card,
     uint8_t response[64];
     size_t response_len = 0;
     
-    // HAL: Read record from card
-    furi_hal_nfc_iso14443b_transceive(cmd, 5, response, &response_len);
+    // REAL: Send APDU using Flipper API  
+    if(!calypso_send_apdu(cmd, 5, response, &response_len)) {
+        FURI_LOG_E("Calypso", "Failed to send Open Session APDU");
+        return false;
+    }
     
     if(response_len > 2) {
         // Extract card challenge
@@ -319,8 +376,8 @@ bool calypso_close_secure_session(PredatorApp* app, CalypsoAuthContext* auth_ctx
     uint8_t response[4];
     size_t response_len = 0;
     
-    // HAL: Close session
-    furi_hal_nfc_iso14443b_transceive(cmd, 9, response, &response_len);
+    // REAL: Send APDU using Flipper API
+    calypso_send_apdu(cmd, 9, response, &response_len);
     
     auth_ctx->authenticated = false;
     
@@ -349,7 +406,7 @@ uint32_t calypso_read_record(PredatorApp* app, const CalypsoCard* card,
     size_t response_len = 0;
     
     // HAL: Read record from card
-    furi_hal_nfc_iso14443b_transceive(cmd, 5, response, &response_len);
+    calypso_send_apdu(cmd, 5, response, &response_len);
     
     if(response_len > 2) {
         uint32_t data_len = response_len - 2;  // Minus status bytes
@@ -841,7 +898,7 @@ bool calypso_select_application(PredatorApp* app, const CalypsoCard* card,
     size_t response_len = 0;
     
     // HAL: Select Calypso application
-    furi_hal_nfc_iso14443b_transceive(cmd, 12, response, &response_len);
+    calypso_send_apdu(cmd, 12, response, &response_len);
     
     if(response_len >= 2 && response[response_len-2] == 0x90 && response[response_len-1] == 0x00) {
         FURI_LOG_I("Calypso", "Application selected successfully");
