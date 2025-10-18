@@ -65,7 +65,8 @@ bool predator_scene_transit_cards_menu_on_event(void* context, SceneManagerEvent
             consumed = true;
             break;
         case TransitCardsMenuCalypso:
-            scene_manager_next_scene(app->scene_manager, PredatorSceneCalypsoReader);
+            // Skip reader - go directly to Buy Ticket (vulnerability demo)
+            scene_manager_next_scene(app->scene_manager, PredatorSceneCalypsoBuyTicketUI);
             consumed = true;
             break;
         case TransitCardsMenuBack:

@@ -19,10 +19,12 @@ ADD_SCENE(predator, felica_actions, FelicaActions)
 ADD_SCENE(predator, felica_history, FelicaHistory)
 ADD_SCENE(predator, felica_balance, FelicaBalance)
 ADD_SCENE(predator, felica_dump, FelicaDump)
-ADD_SCENE(predator, calypso_reader, CalypsoReader)
-ADD_SCENE(predator, calypso_actions, CalypsoActions)
-ADD_SCENE(predator, calypso_journey, CalypsoJourney)
-ADD_SCENE(predator, calypso_contracts, CalypsoContracts)
+ADD_SCENE(predator, calypso_reader_ui, CalypsoReaderUI)
+ADD_SCENE(predator, calypso_actions_ui, CalypsoActionsUI)
+ADD_SCENE(predator, calypso_buy_ticket_ui, CalypsoBuyTicketUI)
+ADD_SCENE(predator, calypso_emulate_ui, CalypsoEmulateUI)
+ADD_SCENE(predator, calypso_journey_ui, CalypsoJourneyUI)
+ADD_SCENE(predator, calypso_contracts_ui, CalypsoContractsUI)
 
 // Access Control DISABLED - Saves 12KB for Transit Cards
 // Can add later if needed
